@@ -15,7 +15,7 @@ const schema = z.object({
     DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
 
     GEMINI_API_KEY: z.string().default(""),
-    GEMINI_MODEL: z.string().min(1).default("gemini-3.8-flash"),
+    GEMINI_MODEL: z.string().min(1).default("gemini-3.1-flash-lite"),
 
     EMAIL_PROVIDER: z.enum(["smtp", "resend", "simulated"]).optional(),
     EMAIL_FROM: z.string().min(1).optional(),

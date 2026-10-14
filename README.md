@@ -298,7 +298,7 @@ Or from the repo root: `npm run install:all`, start your database, then `npm run
 | `NODE_ENV`                          | `development`                                             | `production` turns off demo seeding and the reset endpoint by default      |
 | `LOG_LEVEL`                         | `info`                                                    | pino level                                                                 |
 | `GEMINI_API_KEY`                    | none                                                      | Required to run the agent                                                  |
-| `GEMINI_MODEL`                      | `gemini-3.8-flash`                                        | Any Gemini model with function calling                                     |
+| `GEMINI_MODEL`                      | `gemini-3.1-flash-lite`                                   | Any Gemini model with function calling                                     |
 | `EMAIL_PROVIDER`                    | auto                                                      | `smtp`, `resend` or `simulated`. Auto: SMTP if `SMTP_HOST` is set, else Resend if a key is set, else simulated |
 | `SMTP_HOST` / `SMTP_PORT`           | none / `587`                                              | Any SMTP server. Port 465 uses implicit TLS, 587 uses STARTTLS             |
 | `SMTP_USER` / `SMTP_PASS`           | none                                                      | Mailbox login (for Gmail use an **App Password**)                          |
