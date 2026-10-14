@@ -115,9 +115,10 @@ type Msg = [
     hour?: number,
 ];
 
-interface LeadSeed {
+export interface LeadSeed {
     key: string;
     name: string;
+    email?: string;
     city: string;
     program: string;
     stage: LeadStage;
@@ -404,6 +405,44 @@ export const LEADS: LeadSeed[] = [
                 "Cold call from partner list. Rohan listened and asked for a brochure.",
                 13,
                 12,
+            ],
+        ],
+    },
+    {
+        key: "mahesh",
+        name: "Mahesh Pokale",
+        email: "maheshpokale740@gmail.com",
+        city: "Pune",
+        program: CS,
+        stage: "counselled",
+        counsellor: "Neha Kapoor",
+        source: "Website enquiry form",
+        createdDaysAgo: 13,
+        lastActivityDaysAgo: 7,
+        messages: [
+            [
+                "form",
+                "inbound",
+                "Mahesh Pokale",
+                "Hi, I finished Class 12 with 88%. Please tell me about the scholarship and how placements work.",
+                13,
+                10,
+            ],
+            [
+                "call_note",
+                "internal",
+                "Neha Kapoor",
+                'Mahesh is keen on the AI track. His parents are in Pune and are worried about hostel safety. He said: "I will confirm after my father checks the hostel details." Promised to send campus and hostel information.',
+                9,
+                16,
+            ],
+            [
+                "whatsapp",
+                "inbound",
+                "Mahesh Pokale",
+                "Can you share the hostel details and food options? My father wants to check them before the fee payment.",
+                7,
+                19,
             ],
         ],
     },

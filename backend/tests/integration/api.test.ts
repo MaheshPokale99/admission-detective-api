@@ -122,6 +122,9 @@ describe("API", () => {
             const { body: leads } = await call<any[]>(stack.app, "GET", `${V1}/leads`);
             const byId = Object.fromEntries(leads.map((l) => [l.id, l]));
             assert.equal(byId.lead_rahul.status, "ready");
+            assert.equal(byId.lead_mahesh.name, "Mahesh Pokale");
+            assert.equal(byId.lead_mahesh.email, "maheshpokale740@gmail.com");
+            assert.equal(byId.lead_mahesh.status, "ready", "the real-inbox test lead can be investigated");
             assert.equal(byId.lead_ishita.stalled, false);
             for (const id of ["lead_priya", "lead_arjunm", "lead_rohan"]) {
                 assert.equal(byId[id].status, "protected");

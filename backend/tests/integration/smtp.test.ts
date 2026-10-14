@@ -181,8 +181,21 @@ describe("SMTP email", () => {
                 subject: "s",
                 body: "b",
             });
-            assert.equal(res.body.status, "failed");
-            assert.match(res.body.error, /Invalid credentials|auth/i);
+            assert.equal(res.status, 502, "a failed delivery is an error response, not 200");
+            assert.equal(res.body.error.code, "EMAIL_DELIVERY_FAILED");
+            assert.ok(!/credentials|auth|smtp/i.test(res.body.error.message), "no provider details reach the client");
+
+            const failed = await call<any[]>(broken.app, "GET", "/api/v1/interventions?status=failed");
+            const stored = failed.body.find((i) => i.id === intervention.id);
+            assert.ok(stored, "the draft is kept as failed so it can be retried");
+            assert.match(stored.error, /Invalid credentials|auth/i, "the real reason is stored for the administrator");
+
+            const detail = await call(broken.app, "GET", "/api/v1/leads/lead_rahul");
+            assert.ok(
+                detail.body.messages.every((m: any) => m.direction !== "outbound"),
+                "nothing is recorded as sent",
+            );
+            assert.ok(detail.body.audit.some((a: any) => a.action === "send_failed"));
 
             const retry = await call(stack.app, "POST", `/api/v1/interventions/${intervention.id}/approve`, {
                 reviewer: "Neha Kapoor",

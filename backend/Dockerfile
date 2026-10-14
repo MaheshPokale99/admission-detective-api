@@ -16,6 +16,7 @@ COPY prisma ./prisma
 COPY prisma.config.ts ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
+RUN cp -R /app/src/generated/prisma/. /app/dist/generated/prisma/
 USER node
 EXPOSE 8787
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node --experimental-strip-types dist/server.js"]

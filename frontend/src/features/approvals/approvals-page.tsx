@@ -21,7 +21,8 @@ const HEADER = {
 const GRID = "grid max-w-3xl gap-6";
 
 export function ApprovalsPage() {
-    const { data, isLoading, error, refetch } = useInterventions("pending_approval");
+    const { data: interventions, isLoading, error, refetch } = useInterventions();
+    const data = interventions?.filter((i) => i.status === "pending_approval" || i.status === "failed");
 
     if (error) {
         return (
@@ -73,7 +74,7 @@ export function ApprovalsPage() {
                 {...HEADER}
                 actions={
                     <Badge variant="secondary" aria-live="polite">
-                        {data.length} pending
+                        {data.length} to review
                     </Badge>
                 }
             />

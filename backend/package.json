@@ -21,7 +21,8 @@
         "lint:fix": "eslint . --fix",
         "build": "tsc -p tsconfig.build.json",
         "start:dev": "tsx src/server.ts",
-        "knip": "knip"
+        "knip": "knip",
+        "db:seed:missing": "tsx scripts/seed-missing.ts"
     },
     "type": "module",
     "dependencies": {

@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Pencil, Send, ShieldX, TriangleAlert, X } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
-import { ToneBadge } from "@/components/common/status-badges";
+import { InterventionBadge } from "@/components/common/status-badges";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -62,17 +62,14 @@ export function ApprovalCard({ intervention: iv, leadName, leadEmail, reviewer }
 
     const approve = useMutation({
         mutationFn: () => api.approve(iv.id, { reviewer, subject, body }),
-        onSuccess: async (res) => {
+        onSuccess: async () => {
             await refresh();
-            if (res.status === "sent") {
-                toast.success(`Approved and sent to ${leadName}`);
-            } else if (res.status === "failed") {
-                toast.error("Approved, but the message could not be sent", { description: "You can try again." });
-            } else {
-                toast.info(`Approved. Sending to ${leadName}…`);
-            }
+            toast.success(`Approved and sent to ${leadName}`);
         },
-        onError: (e) => toast.error(e.message, { description: errorDescription(e) }),
+        onError: async (e) => {
+            await refresh();
+            toast.error(e.message, { description: errorDescription(e) });
+        },
     });
 
     const reject = useMutation({
@@ -94,11 +91,18 @@ export function ApprovalCard({ intervention: iv, leadName, leadEmail, reviewer }
                 <CardTitle>{ACTION_LABEL[iv.action]}</CardTitle>
                 <CardDescription>Review and edit if needed. Exactly this text is sent, nothing else.</CardDescription>
                 <CardAction>
-                    <ToneBadge tone="warning">Pending approval</ToneBadge>
+                    <InterventionBadge status={iv.status} />
                 </CardAction>
             </CardHeader>
             <CardContent>
                 <FieldGroup className="gap-4">
+                    {iv.status === "failed" && (
+                        <Alert variant="destructive">
+                            <TriangleAlert />
+                            <AlertTitle>The last attempt could not be sent</AlertTitle>
+                            <AlertDescription>Nothing reached the student. Approve again to retry.</AlertDescription>
+                        </Alert>
+                    )}
                     {iv.warnings.length > 0 && (
                         <Alert className="*:[svg]:text-warning">
                             <TriangleAlert />

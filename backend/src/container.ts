@@ -80,6 +80,7 @@ export function createContainer(config: AppConfig, logger: Logger, overrides: Co
         audit: repositories.audit,
         email: emailSender,
         transactions: database,
+        logger,
     });
 
     const outcomes = new OutcomesService({

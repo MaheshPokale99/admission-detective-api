@@ -48,6 +48,12 @@ export class UpstreamError extends AppError {
     }
 }
 
+export class DeliveryError extends AppError {
+    constructor() {
+        super("The message was approved but could not be sent. Try again in a moment.", 502, "EMAIL_DELIVERY_FAILED");
+    }
+}
+
 export class ServiceUnavailableError extends AppError {
     constructor(message: string) {
         super(message, 503, "SERVICE_UNAVAILABLE");

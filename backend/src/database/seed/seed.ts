@@ -1,9 +1,53 @@
 import { InterventionStatus, MessageChannel } from "../../generated/prisma/enums.js";
 import type { Database } from "../database.js";
-import { ago, HISTORY, LEADS, RESOURCES } from "./seed-data.js";
+import { ago, HISTORY, LEADS, RESOURCES, type LeadSeed } from "./seed-data.js";
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z]+/g, ".");
 const DEMO_PROGRAM = LEADS[0]!.program;
+
+const leadRow = (s: LeadSeed, index: number, now: number) => ({
+    id: `lead_${s.key}`,
+    name: s.name,
+    email: s.email ?? `${slug(s.name)}@example.com`,
+    phone: `+91 90000 000${10 + index}`,
+    city: s.city,
+    program: s.program,
+    stage: s.stage,
+    consent: s.consent ?? "opted_in",
+    consentNote: s.consentNote ?? "Consented on enquiry form",
+    eligibility: s.eligibility ?? "eligible",
+    ineligibleReason: s.ineligibleReason ?? "",
+    counsellor: s.counsellor,
+    source: s.source,
+    createdAt: new Date(ago(s.createdDaysAgo, 9, now)),
+    lastActivityAt: new Date(ago(s.lastActivityDaysAgo, 12, now)),
+});
+
+const messageRows = (s: LeadSeed, now: number) =>
+    s.messages.map(([channel, direction, author, body, daysAgo, hour], i) => ({
+        id: `m_${s.key}_${i + 1}`,
+        leadId: `lead_${s.key}`,
+        channel,
+        direction,
+        author,
+        body,
+        sentAt: new Date(ago(daysAgo, hour ?? 12, now)),
+    }));
+
+/** Adds only the sample leads that are not in the database yet (matched by id) and leaves everything else alone. */
+export async function seedMissingLeads(database: Database): Promise<string[]> {
+    const now = Date.now();
+    return database.transaction(async () => {
+        const db = database.client;
+        const existing = new Set((await db.lead.findMany({ select: { id: true } })).map((l) => l.id));
+        const missing = LEADS.map((s, index) => ({ s, index })).filter(({ s }) => !existing.has(`lead_${s.key}`));
+        if (missing.length === 0) return [];
+
+        await db.lead.createMany({ data: missing.map(({ s, index }) => leadRow(s, index, now)) });
+        await db.message.createMany({ data: missing.flatMap(({ s }) => messageRows(s, now)) });
+        return missing.map(({ s }) => s.name);
+    });
+}
 
 /** Deletes every row, children first. */
 async function resetAllData(database: Database): Promise<void> {
@@ -29,39 +73,8 @@ export async function seedDatabase(database: Database, options: { reset: boolean
             data: RESOURCES(now).map((r) => ({ ...r, verifiedAt: new Date(r.verifiedAt) })),
         });
 
-        await db.lead.createMany({
-            data: LEADS.map((s, index) => ({
-                id: `lead_${s.key}`,
-                name: s.name,
-                email: `${slug(s.name)}@example.com`,
-                phone: `+91 90000 000${10 + index}`,
-                city: s.city,
-                program: s.program,
-                stage: s.stage,
-                consent: s.consent ?? "opted_in",
-                consentNote: s.consentNote ?? "Consented on enquiry form",
-                eligibility: s.eligibility ?? "eligible",
-                ineligibleReason: s.ineligibleReason ?? "",
-                counsellor: s.counsellor,
-                source: s.source,
-                createdAt: new Date(ago(s.createdDaysAgo, 9, now)),
-                lastActivityAt: new Date(ago(s.lastActivityDaysAgo, 12, now)),
-            })),
-        });
-
-        await db.message.createMany({
-            data: LEADS.flatMap((s) =>
-                s.messages.map(([channel, direction, author, body, daysAgo, hour], i) => ({
-                    id: `m_${s.key}_${i + 1}`,
-                    leadId: `lead_${s.key}`,
-                    channel,
-                    direction,
-                    author,
-                    body,
-                    sentAt: new Date(ago(daysAgo, hour ?? 12, now)),
-                })),
-            ),
-        });
+        await db.lead.createMany({ data: LEADS.map((s, index) => leadRow(s, index, now)) });
+        await db.message.createMany({ data: LEADS.flatMap((s) => messageRows(s, now)) });
 
         await db.lead.createMany({
             data: HISTORY.map((h, index) => ({

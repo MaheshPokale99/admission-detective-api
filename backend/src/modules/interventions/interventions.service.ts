@@ -1,5 +1,6 @@
 import { MAX_BODY_LENGTH, MAX_SUBJECT_LENGTH } from "../../common/constants.js";
-import { ConflictError, NotFoundError, ValidationError } from "../../common/errors/app-error.js";
+import { ConflictError, DeliveryError, NotFoundError, ValidationError } from "../../common/errors/app-error.js";
+import type { Logger } from "../../common/logger/logger.js";
 import { newId } from "../../common/utils/ids.js";
 import { nowIso } from "../../common/utils/time.js";
 import type { Transactional } from "../../database/database.js";
@@ -20,6 +21,7 @@ export interface InterventionsServiceDeps {
     audit: AuditRepository;
     email: EmailSender;
     transactions: Transactional;
+    logger: Logger;
 }
 
 export class InterventionsService {
@@ -89,27 +91,9 @@ export class InterventionsService {
             action: edited ? "approved_with_edits" : "approved",
         });
 
+        let result;
         try {
-            const result = await this.deps.email.send(lead.email, finalSubject, finalBody);
-            await this.deps.transactions.transaction(async () => {
-                await this.deps.interventions.markSent(id, result.provider, result.messageId);
-                await this.deps.messages.create({
-                    id: newId("m"),
-                    leadId: lead.id,
-                    channel: MessageChannel.email,
-                    direction: MessageDirection.outbound,
-                    author: lead.counsellor,
-                    body: `${finalSubject}\n\n${finalBody}`,
-                    sentAt: nowIso(),
-                });
-                await this.deps.audit.log({
-                    leadId: lead.id,
-                    interventionId: id,
-                    actor: "System",
-                    action: "sent",
-                    detail: result.provider,
-                });
-            });
+            result = await this.deps.email.send(lead.email, finalSubject, finalBody);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             await this.deps.interventions.markFailed(id, message);
@@ -120,7 +104,29 @@ export class InterventionsService {
                 action: "send_failed",
                 detail: message,
             });
+            this.deps.logger.error({ err: error, interventionId: id }, "email delivery failed");
+            throw new DeliveryError();
         }
+
+        await this.deps.transactions.transaction(async () => {
+            await this.deps.interventions.markSent(id, result.provider, result.messageId);
+            await this.deps.messages.create({
+                id: newId("m"),
+                leadId: lead.id,
+                channel: MessageChannel.email,
+                direction: MessageDirection.outbound,
+                author: lead.counsellor,
+                body: `${finalSubject}\n\n${finalBody}`,
+                sentAt: nowIso(),
+            });
+            await this.deps.audit.log({
+                leadId: lead.id,
+                interventionId: id,
+                actor: "System",
+                action: "sent",
+                detail: result.provider,
+            });
+        });
         return this.getById(id);
     }
 
