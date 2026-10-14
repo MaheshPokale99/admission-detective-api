@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LeadStage {
+  enquiry
+  counselled
+  shortlisted
+  applied
+  admitted
+  lost
+}
+
+enum Consent {
+  opted_in
+  opted_out
+  unknown
+}
+
+enum Eligibility {
+  eligible
+  ineligible
+}
+
+enum MessageChannel {
+  form
+  call_note
+  whatsapp
+  email
+}
+
+enum MessageDirection {
+  inbound
+  outbound
+  internal
+}
+
+enum InterventionStatus {
+  pending_approval
+  approved
+  sent
+  rejected
+  failed
+}
+
+enum OutcomeType {
+  replied
+  session_booked
+  application_resumed
+  admitted
+  no_response
+}
+
+enum RecoveryAction {
+  send_fee_resource
+  offer_parent_session
+  share_scholarship_info
+  share_curriculum_info
+  answer_pending_question
+  schedule_callback
+  no_action
+}
+
+enum ReasonCategory {
+  fees
+  parent_approval
+  course_clarity
+  missing_information
+  competitor
+  callback_missed
+  timing
+  other
+}
+
+model Lead {
+  id               String      @id
+  name             String
+  email            String
+  phone            String      @default("")
+  city             String      @default("")
+  program          String
+  stage            LeadStage
+  consent          Consent
+  consentNote      String      @default("") @map("consent_note")
+  eligibility      Eligibility
+  ineligibleReason String      @default("") @map("ineligible_reason")
+  counsellor       String
+  source           String      @default("")
+  createdAt        DateTime    @map("created_at") @db.Timestamptz(3)
+  lastActivityAt   DateTime    @map("last_activity_at") @db.Timestamptz(3)
+
+  messages       Message[]
+  investigations Investigation[]
+  interventions  Intervention[]
+  outcomes       Outcome[]
+  auditLog       AuditLog[]
+
+  @@index([lastActivityAt])
+  @@map("leads")
+}
+
+model Message {
+  id        String           @id
+  leadId    String           @map("lead_id")
+  channel   MessageChannel
+  direction MessageDirection
+  author    String
+  body      String
+  sentAt    DateTime         @map("sent_at") @db.Timestamptz(3)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, sentAt])
+  @@map("messages")
+}
+
+model Resource {
+  id         String   @id
+  category   String
+  title      String
+  content    String
+  url        String
+  verifiedAt DateTime @map("verified_at") @db.Timestamptz(3)
+  verifiedBy String   @map("verified_by")
+
+  @@map("resources")
+}
+
+model Investigation {
+  id         String   @id
+  leadId     String   @map("lead_id")
+  result     Json
+  trace      Json
+  model      String
+  durationMs Int      @map("duration_ms")
+  createdAt  DateTime @map("created_at") @db.Timestamptz(3)
+
+  lead          Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  interventions Intervention[]
+
+  @@index([leadId, createdAt(sort: Desc)])
+  @@map("investigations")
+}
+
+model Intervention {
+  id                String             @id
+  leadId            String             @map("lead_id")
+  investigationId   String?            @map("investigation_id")
+  channel           String             @default("email")
+  status            InterventionStatus
+  action            RecoveryAction
+  primaryCategory   ReasonCategory?    @map("primary_category")
+  draftSubject      String             @map("draft_subject")
+  draftBody         String             @map("draft_body")
+  finalSubject      String?            @map("final_subject")
+  finalBody         String?            @map("final_body")
+  edited            Boolean            @default(false)
+  resourceIds       String[]           @default([]) @map("resource_ids")
+  warnings          String[]           @default([])
+  reviewedBy        String?            @map("reviewed_by")
+  reviewedAt        DateTime?          @map("reviewed_at") @db.Timestamptz(3)
+  rejectionReason   String?            @map("rejection_reason")
+  sentAt            DateTime?          @map("sent_at") @db.Timestamptz(3)
+  provider          String?
+  providerMessageId String?            @map("provider_message_id")
+  error             String?
+  createdAt         DateTime           @map("created_at") @db.Timestamptz(3)
+
+  lead          Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  investigation Investigation? @relation(fields: [investigationId], references: [id], onDelete: SetNull)
+  outcomes      Outcome[]
+  auditLog      AuditLog[]
+
+  @@index([leadId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("interventions")
+}
+
+model Outcome {
+  id             String      @id
+  interventionId String      @map("intervention_id")
+  leadId         String      @map("lead_id")
+  type           OutcomeType
+  note           String      @default("")
+  createdAt      DateTime    @map("created_at") @db.Timestamptz(3)
+
+  intervention Intervention @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+  lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([interventionId])
+  @@index([leadId, createdAt])
+  @@map("outcomes")
+}
+
+model AuditLog {
+  id             Int      @id @default(autoincrement())
+  leadId         String?  @map("lead_id")
+  interventionId String?  @map("intervention_id")
+  actor          String
+  action         String
+  detail         String   @default("")
+  createdAt      DateTime @map("created_at") @db.Timestamptz(3)
+
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  intervention Intervention? @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, id(sort: Desc)])
+  @@map("audit_log")
+}

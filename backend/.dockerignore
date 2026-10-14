@@ -1,0 +1,9 @@
+node_modules
+dist
+data
+.env
+tests
+scripts
+src/generated
+*.md
+logs
