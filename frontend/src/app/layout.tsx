@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Suspense } from "react";
-import { PageSkeleton } from "@/components/common/page-header";
-import { AppShell } from "@/components/layout/app-shell";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -30,11 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
             <body className="min-h-full bg-background font-sans text-foreground">
-                <Providers>
-                    <Suspense fallback={<PageSkeleton />}>
-                        <AppShell>{children}</AppShell>
-                    </Suspense>
-                </Providers>
+                <Providers>{children}</Providers>
             </body>
         </html>
     );

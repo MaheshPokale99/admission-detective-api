@@ -38,7 +38,7 @@ export function AppSidebar() {
                         <SidebarMenuButton
                             size="lg"
                             tooltip={APP_NAME}
-                            render={<Link href="/" />}
+                            render={<Link href="/dashboard" />}
                             onClick={() => isMobile && setOpenMobile(false)}
                         >
                             <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

@@ -69,7 +69,7 @@ The agent has to separate **confirmed** reasons from **possible** ones, and the 
 ```mermaid
 flowchart LR
   subgraph FE["Frontend: Next.js 16, shadcn/ui, Tailwind v4, Framer Motion"]
-    PAGES["app/ routes (thin)"] --> FEAT["features/ (dashboard, leads, approvals, recovery-log)"]
+    PAGES["app/ routes (thin)"] --> FEAT["features/ (landing, dashboard, leads, approvals, recovery-log)"]
     FEAT --> HOOKS["hooks/use-api (TanStack Query)"] --> CLIENT["lib/api (typed client + SSE)"]
   end
 
@@ -319,7 +319,8 @@ Or from the repo root: `npm run install:all`, start your database, then `npm run
 
 ### 5-minute demo script
 
-1. **Dashboard**: stalled leads, the funnel, what has worked historically, and the _Safety and control_ card.
+0. **Landing page** (`/`): the animated path shows the seven backend steps. Click **Open the dashboard**.
+1. **Dashboard** (`/dashboard`): stalled leads, the funnel, what has worked historically, and the _Safety and control_ card.
 2. **Lead Radar**: ranked stalled leads. Open the _Protected_ tab: Priya opted out, Arjun is ineligible, Rohan has no consent.
 3. Open **Rahul Verma** and click **Investigate**. Watch the trail stream in, then click a quote to jump to the source message.
 4. Open **Draft & approval**, edit the message and click **Approve & send** (it is delivered over SMTP or Resend when one is configured; otherwise it is only recorded).
@@ -382,13 +383,16 @@ backend/
     helpers/                   test stack, scripted model, factories
 frontend/
   src/
-    app/                       routes only (thin), error/loading/not-found
+    app/                       routes only (thin)
+      page.tsx                 public landing page at /
+      (app)/                   the product, inside the sidebar shell:
+                               dashboard, leads, leads/[id], approvals, log
     features/
-      dashboard/  leads/  approvals/  recovery-log/
+      landing/  dashboard/  leads/  approvals/  recovery-log/
         <feature>-page.tsx  components/  hooks/  lib/
     components/
       ui/                      shadcn primitives
-      layout/                  sidebar shell, breadcrumb, system status
+      layout/                  sidebar shell, breadcrumb
       common/                  badges, page header, motion, theme toggle
     hooks/                     TanStack Query hooks
     lib/api/                   typed client, endpoints, SSE stream
